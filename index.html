@@ -78,9 +78,22 @@
             text-align: left;
         }
         pre { 
-            display: inline-block; text-align: left; margin: 1em auto; padding: 1em; background-color: #ffffff; color: #000000; border: 1px solid #999; line-height: 1.1; white-space: pre; font-family: 'MS Gothic', 'Osaka-mono', monospace; font-size: 2px; border-radius: 5px; 
+            display: block; /* Changed from inline-block */
+            text-align: left;
+            margin: 1em auto;
+            padding: 1em;
+            background-color: #ffffff;
+            color: #000000;
+            border: 1px solid #999;
+            line-height: 1.1;
+            white-space: pre;
+            font-family: 'MS Gothic', 'Osaka-mono', monospace;
+            font-size: 2px;
+            border-radius: 5px;
             overflow-x: auto;
             max-width: 100%;
+            word-wrap: normal; /* Added */
+            word-break: keep-all; /* Added */
         }
         .secret-message-pre {
             font-size: 30px; 
@@ -180,7 +193,8 @@
                 width: 100%;
             }
             pre {
-                font-size: 1.5vw; /* Scale with viewport width */
+                font-size: 8px; /* Fixed font size for better readability on mobile */
+                line-height: 1; /* Adjust line height for compact display */
             }
             .secret-message-pre {
                 font-size: 18px;
