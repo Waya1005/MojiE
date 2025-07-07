@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>MojiE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body { 
+            font-family: sans-serif; 
+            background: linear-gradient(to bottom right, #B3E5FC, #F8BBD0, #FFECB3);
+            color: #333; 
+            text-align: center; 
+            padding: 2em; 
+            min-height: 100vh; 
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        h1 { color: #2196F3; }
+        #container { 
+            max-width: 800px; 
+            width: 100%;
+            margin: auto; 
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2em; 
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+        .file-input-area { 
+            position: relative; /* Set position to relative to act as a container for the absolute positioned input */
+            border: 1px solid #BBDEFB;
+            background-color: #E3F2FD;
+            padding: 1.5em; 
+            border-radius: 8px; 
+            margin-bottom: 1em; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            overflow: hidden; /* Hide the parts of the input that might overflow */
+        }
+        .file-input-area.hover { 
+            border-color: #64B5F6;
+            background-color: #BBDEFB;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .file-input-area input[type="file"] { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        #loader { border: 8px solid #f3f3f3; border-radius: 50%; border-top: 8px solid #3498db; width: 60px; height: 60px; animation: spin 1.5s linear infinite; margin: 1em auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        .result-block {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+            padding: 1em;
+            margin-bottom: 1.5em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .result-block h2 {
+            background-color: #E0F7FA;
+            color: #2196F3;
+            padding: 0.5em 1em;
+            margin: -1em -1em 1em -1em;
+            border-radius: 8px 8px 0 0;
+            font-size: 1.2em;
+            text-align: left;
+        }
+        pre { 
+            display: inline-block; text-align: left; margin: 1em auto; padding: 1em; background-color: #ffffff; color: #000000; border: 1px solid #999; line-height: 1.1; white-space: pre; font-family: 'MS Gothic', 'Osaka-mono', monospace; font-size: 2px; border-radius: 5px; 
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        .secret-message-pre {
+            font-size: 30px; 
+            line-height: 1.2; 
+            color: #000000; 
+            font-family: sans-serif;
+            border: none;
+            background-color: transparent;
+            padding: 0;
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        button { 
+            background-color: #3498db; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 1em; 
+            margin: 0 5px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        button:hover { 
+            background-color: #2980b9; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        textarea { width: 95%; height: 100px; margin-bottom: 1em; padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1.2em; }
+
+        /* --- View Management --- */
+        #mode-selection, #mojie-conversion-mode, #hide-secret-mode, #decode-secret-mode, #controls, #loading-message {
+            display: none;
+        }
+        #mode-selection.active, #mojie-conversion-mode.active, #hide-secret-mode.active, #decode-secret-mode.active, #controls.active, #loading-message.active {
+            display: block;
+        }
+        #download-generated-button, #download-secret-button {
+            display: none; /* Hide download buttons by default */
+        }
+        #download-generated-button.visible, #download-secret-button.visible {
+            display: inline-block; /* Show them when they have the .visible class */
+        }
+
+        /* --- Responsive Design --- */
+        @media (max-width: 820px) { /* For tablets and large phones */
+            body {
+                padding: 1em;
+            }
+            #container {
+                padding: 1.5em;
+            }
+            h1 {
+                font-size: 2.5em;
+            }
+            pre {
+                font-size: 2px; /* Keep original size on tablet, scrolling is fine */
+            }
+        }
+
+        @media (max-width: 480px) { /* For smartphones */
+            body {
+                padding: 0.5em;
+                justify-content: flex-start;
+            }
+            #container {
+                width: 100%;
+                padding: 1em;
+                border-radius: 0;
+                box-shadow: none;
+            }
+            h1 {
+                font-size: 2em;
+            }
+            p {
+                font-size: 0.9em;
+            }
+            .file-input-area {
+                padding: 1em;
+            }
+            /* Use flexbox for button containers on mobile */
+            #mode-selection.active, #controls.active {
+                display: flex;
+                flex-direction: column;
+                gap: 15px; /* Increased gap for better touch targets */
+            }
+            button {
+                width: 100%;
+                margin: 0;
+                padding: 15px;
+            }
+            #download-generated-button.visible, #download-secret-button.visible {
+                display: block; /* Make download buttons full-width on mobile */
+            }
+            textarea {
+                width: 100%;
+            }
+            pre {
+                font-size: 1.5vw; /* Scale with viewport width */
+            }
+            .secret-message-pre {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>MojiE</h1>
+        <p>画像 to 文字アート変換</p>
+
+        <div id="mode-selection" class="active">
+            <p>MojiEを楽しもう</p>
+            <button id="mojie-conversion-button">MojiE化する</button>
+            <button id="hide-secret-button">秘密のメッセージを隠す</button>
+            <button id="decode-secret-button">秘密のメッセージを解読</button>
+        </div>
+
+        <div id="mojie-conversion-mode">
+            <h2>画像をMojiE化</h2>
+            <div class="file-input-area" id="mojie-upload-area">
+                <p>ここにファイルをドラッグ＆ドロップ<br>またはクリックしてファイルを選択</p>
+                <input type="file" id="mojie-file-input" accept="image/*">
+                <div class="file-name" id="mojie-file-name"></div>
+            </div>
+            <button id="process-mojie-conversion-button">MojiE化する</button>
+        </div>
+
+        <div id="hide-secret-mode">
+            <h2>秘密のメッセージを埋め込む</h2>
+            <div class="file-input-area" id="hide-secret-image-upload-area">
+                <p>ここに**画像ファイル**をドラッグ＆ドロップ<br>またはクリックして選択</p>
+                <input type="file" id="hide-secret-image-input" accept="image/*">
+                <div class="file-name" id="hide-secret-image-file-name"></div>
+            </div>
+            <textarea id="hide-secret-message-input" placeholder="ここに秘密のメッセージを入力してください..."></textarea>
+            <button id="process-hide-secret-button">秘密を埋め込む</button>
+        </div>
+
+        <div id="decode-secret-mode">
+            <h2>秘密のメッセージを解読</h2>
+            <div class="file-input-area" id="decode-secret-image-upload-area">
+                <p>ここに**画像ファイル**をドラッグ＆ドロップ<br>またはクリックして選択</p>
+                <input type="file" id="decode-secret-image-input" accept="image/*">
+                <div class="file-name" id="decode-secret-image-file-name"></div>
+            </div>
+            <div class="file-input-area" id="decode-secret-text-upload-area">
+                <p>ここに**比較用テキストファイル**をドラッグ＆ドロップ<br>またはクリックして選択</p>
+                <input type="file" id="decode-secret-text-input" accept=".txt">
+                <div class="file-name" id="decode-secret-text-file-name"></div>
+            </div>
+            <button id="process-decode-secret-button">変換して秘密を解読</button>
+        </div>
+        
+        <div id="loading-message">
+            <p>処理中です...</p>
+            <div id="loader"></div>
+        </div>
+
+        <div id="result-area"></div>
+
+        <div id="controls">
+            <button id="back-to-mode-selection">モード選択に戻る</button>
+            <button id="download-generated-button">生成アートをテキストで保存</button>
+            <button id="download-secret-button">秘密のメッセージを保存</button>
+        </div>
+
+    </div>
+
+    <script>
+        const modeSelection = document.getElementById('mode-selection');
+        const mojieConversionMode = document.getElementById('mojie-conversion-mode');
+        const hideSecretMode = document.getElementById('hide-secret-mode');
+        const decodeSecretMode = document.getElementById('decode-secret-mode');
+
+        const mojieConversionButton = document.getElementById('mojie-conversion-button');
+        const hideSecretButton = document.getElementById('hide-secret-button');
+        const decodeSecretButton = document.getElementById('decode-secret-button');
+
+        const mojieUploadArea = document.getElementById('mojie-upload-area');
+        const mojieFileInput = document.getElementById('mojie-file-input');
+        const mojieFileNameDisplay = document.getElementById('mojie-file-name');
+        const processMojieConversionButton = document.getElementById('process-mojie-conversion-button');
+
+        const hideSecretImageUploadArea = document.getElementById('hide-secret-image-upload-area');
+        const hideSecretImageInput = document.getElementById('hide-secret-image-input');
+        const hideSecretImageFileNameDisplay = document.getElementById('hide-secret-image-file-name');
+        const hideSecretMessageInput = document.getElementById('hide-secret-message-input');
+        const processHideSecretButton = document.getElementById('process-hide-secret-button');
+
+        const decodeSecretImageUploadArea = document.getElementById('decode-secret-image-upload-area');
+        const decodeSecretImageInput = document.getElementById('decode-secret-image-input');
+        const decodeSecretImageFileNameDisplay = document.getElementById('decode-secret-image-file-name');
+        const decodeSecretTextUploadArea = document.getElementById('decode-secret-text-upload-area');
+        const decodeSecretTextInput = document.getElementById('decode-secret-text-input');
+        const decodeSecretTextFileNameDisplay = document.getElementById('decode-secret-text-file-name');
+        const processDecodeSecretButton = document.getElementById('process-decode-secret-button');
+
+        const loadingMessage = document.getElementById('loading-message');
+        const resultArea = document.getElementById('result-area');
+        const controls = document.getElementById('controls');
+        const backToModeSelectionButton = document.getElementById('back-to-mode-selection');
+        const downloadGeneratedButton = document.getElementById('download-generated-button');
+        const downloadSecretButton = document.getElementById('download-secret-button');
+
+        let currentMode = ''; // 'mojie-conversion', 'hide-secret', 'decode-secret'
+        let generatedAsciiArt = ""; // 生成された文字アートを保持
+        let extractedSecretMessage = ""; // 抽出された秘密のメッセージを保持
+
+        // --- UI表示制御 --- 
+        function showMode(mode) {
+            // Deactivate all views
+            modeSelection.classList.remove('active');
+            mojieConversionMode.classList.remove('active');
+            hideSecretMode.classList.remove('active');
+            decodeSecretMode.classList.remove('active');
+            controls.classList.remove('active');
+            loadingMessage.classList.remove('active');
+
+            resultArea.innerHTML = ''; // Clear result area
+
+            // Reset forms
+            const forms = [mojieFileInput, hideSecretImageInput, hideSecretMessageInput, decodeSecretImageInput, decodeSecretTextInput];
+            forms.forEach(input => { 
+                if(input.type === 'file'){
+                    input.value = '';
+                    input.parentNode.querySelector('.file-name').textContent = '';
+                } else {
+                    input.value = '';
+                }
+            });
+            
+            // Hide download buttons
+            downloadGeneratedButton.classList.remove('visible');
+            downloadSecretButton.classList.remove('visible');
+
+            generatedAsciiArt = "";
+            extractedSecretMessage = "";
+
+            // Activate the correct view
+            if (mode === 'mojie-conversion') {
+                mojieConversionMode.classList.add('active');
+                currentMode = 'mojie-conversion';
+            } else if (mode === 'hide-secret') {
+                hideSecretMode.classList.add('active');
+                currentMode = 'hide-secret';
+            } else if (mode === 'decode-secret') {
+                decodeSecretMode.classList.add('active');
+                currentMode = 'decode-secret';
+            } else { // back to mode selection
+                modeSelection.classList.add('active');
+                currentMode = '';
+            }
+        }
+
+        // --- イベントリスナー --- 
+        mojieConversionButton.addEventListener('click', () => showMode('mojie-conversion'));
+        hideSecretButton.addEventListener('click', () => showMode('hide-secret'));
+        decodeSecretButton.addEventListener('click', () => showMode('decode-secret'));
+        backToModeSelectionButton.addEventListener('click', () => showMode('selection'));
+        downloadGeneratedButton.addEventListener('click', downloadGeneratedAsciiArt);
+        downloadSecretButton.addEventListener('click', downloadExtractedSecret);
+
+        // --- ファイル選択とドラッグ＆ドロップの共通処理 --- 
+        function setupFileInput(inputElement, displayElement, acceptType) {
+            inputElement.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    displayElement.textContent = `選択中: ${e.target.files[0].name}`;
+                } else {
+                    displayElement.textContent = '';
+                }
+            });
+
+            const area = inputElement.parentNode;
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.classList.add('hover');
+            });
+            area.addEventListener('dragleave', () => {
+                area.classList.remove('hover');
+            });
+            area.addEventListener('drop', (e) => {
+                e.preventDefault();
+                area.classList.remove('hover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    if (acceptType === 'image/*' && !files[0].type.startsWith('image/')) {
+                        alert('画像ファイルを選択してください。');
+                        return;
+                    } else if (acceptType === '.txt' && !files[0].name.toLowerCase().endsWith('.txt')) {
+                        alert('テキストファイルを選択してください。');
+                        return;
+                    }
+                    inputElement.files = files; // ファイルをセット
+                    displayElement.textContent = `選択中: ${files[0].name}`;
+                }
+            });
+        }
+
+        setupFileInput(mojieFileInput, mojieFileNameDisplay, 'image/*');
+        setupFileInput(hideSecretImageInput, hideSecretImageFileNameDisplay, 'image/*');
+        setupFileInput(decodeSecretImageInput, decodeSecretImageFileNameDisplay, 'image/*');
+        setupFileInput(decodeSecretTextInput, decodeSecretTextFileNameDisplay, '.txt');
+
+        function showLoader(currentView) {
+            currentView.classList.remove('active');
+            loadingMessage.classList.add('active');
+            resultArea.innerHTML = '';
+        }
+
+        function showResults(content, showGeneratedDownload, showSecretDownload = false) {
+            loadingMessage.classList.remove('active');
+            resultArea.innerHTML = content;
+            controls.classList.add('active');
+            if (showGeneratedDownload) {
+                downloadGeneratedButton.classList.add('visible');
+            }
+            if (showSecretDownload) {
+                downloadSecretButton.classList.add('visible');
+            }
+        }
+
+        function showError(error) {
+            loadingMessage.classList.remove('active');
+            resultArea.innerHTML = `<p class="error-message">エラーが発生しました: ${error.message}</p>`;
+            controls.classList.add('active');
+            console.error('処理中にエラー:', error);
+        }
+
+        // --- MojiE化処理 --- 
+        processMojieConversionButton.addEventListener('click', async () => {
+            const imageFile = mojieFileInput.files[0];
+            if (!imageFile || !imageFile.type.startsWith('image/')) {
+                alert('画像ファイルを選択してください。');
+                return;
+            }
+            showLoader(mojieConversionMode);
+
+            try {
+                const imageDataUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsDataURL(imageFile);
+                });
+
+                const img = new Image();
+                img.onload = () => {
+                    generatedAsciiArt = convertToAscii(img);
+                    const resultContent = `
+                        <div class="result-block">
+                            <h2>生成された文字アート</h2>
+                            <pre>${generatedAsciiArt}</pre>
+                        </div>
+                    `;
+                    showResults(resultContent, true);
+                };
+                img.onerror = () => { throw new Error('画像ファイルの読み込みに失敗しました。'); };
+                img.src = imageDataUrl;
+            } catch (error) {
+                showError(error);
+            }
+        });
+
+        // --- 秘密のメッセージ埋め込み処理 --- 
+        processHideSecretButton.addEventListener('click', async () => {
+            const imageFile = hideSecretImageInput.files[0];
+            const secretMessageText = hideSecretMessageInput.value;
+
+            if (!imageFile || !imageFile.type.startsWith('image/')) {
+                alert('画像ファイルを選択してください。'); return;
+            }
+            if (!secretMessageText.trim()) {
+                alert('秘密のメッセージを入力してください。'); return;
+            }
+            showLoader(hideSecretMode);
+
+            try {
+                const imageDataUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsDataURL(imageFile);
+                });
+
+                const img = new Image();
+                img.onload = () => {
+                    let baseAsciiArt = convertToAscii(img);
+                    generatedAsciiArt = embedSecretMessage(baseAsciiArt, secretMessageText);
+                    const resultContent = `
+                        <div class="result-block">
+                            <h2>秘密のメッセージが埋め込まれたMojiEアート</h2>
+                            <pre>${generatedAsciiArt}</pre>
+                        </div>
+                    `;
+                    showResults(resultContent, true);
+                };
+                img.onerror = () => { throw new Error('画像ファイルの読み込みに失敗しました。'); };
+                img.src = imageDataUrl;
+            } catch (error) {
+                showError(error);
+            }
+        });
+
+        // --- 秘密のメッセージ解読処理 --- 
+        processDecodeSecretButton.addEventListener('click', async () => {
+            const imageFile = decodeSecretImageInput.files[0];
+            const textFile = decodeSecretTextInput.files[0];
+
+            if (!imageFile || !imageFile.type.startsWith('image/')) {
+                alert('画像ファイルを選択してください。'); return;
+            }
+            if (!textFile || !textFile.name.toLowerCase().endsWith('.txt')) {
+                alert('比較用テキストファイルを選択してください。'); return;
+            }
+            showLoader(decodeSecretMode);
+
+            try {
+                const imagePromise = new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsDataURL(imageFile);
+                });
+
+                const textPromise = new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(e);
+                    reader.readAsText(textFile, 'UTF-8');
+                });
+
+                const [imageDataUrl, originalTextContent] = await Promise.all([imagePromise, textPromise]);
+
+                const img = new Image();
+                img.onload = () => {
+                    generatedAsciiArt = convertToAscii(img);
+                    extractedSecretMessage = extractSecretMessage(generatedAsciiArt, originalTextContent);
+                    const resultContent = `
+                        <div class="result-block">
+                            <h2>生成された文字アート</h2>
+                            <pre>${generatedAsciiArt}</pre>
+                        </div>
+                        ${extractedSecretMessage ? `
+                            <div class="result-block">
+                                <h2>秘密のメッセージ</h2>
+                                <pre class="secret-message-pre">${extractedSecretMessage}</pre>
+                            </div>
+                        ` : `
+                            <div class="result-block">
+                                <h2>秘密のメッセージ</h2>
+                                <p>秘密のメッセージは見つかりませんでした。</p>
+                            </div>
+                        `}
+                    `;
+                    showResults(resultContent, true, !!extractedSecretMessage);
+                };
+                img.onerror = () => { throw new Error('画像ファイルの読み込みに失敗しました。'); };
+                img.src = imageDataUrl;
+            } catch (error) {
+                showError(error);
+            }
+        });
+
+        function convertToAscii(img) {
+            const TARGET_WIDTH = 300; // 文字アートの幅
+            const FONT_ASPECT_RATIO = 0.5; // 文字の縦横比（高さ/幅）
+            const VERTICAL_STRETCH = 1.9; // 縦方向への引き伸ばし率
+            
+            // 1. 画像を適切なサイズにリサイズするためのCanvasを作成
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            
+            const scale = TARGET_WIDTH / img.width;
+            const newWidth = TARGET_WIDTH;
+            // 縦の高さを計算する際に、引き伸ばし率を適用
+            const newHeight = Math.floor(img.height * scale * FONT_ASPECT_RATIO * VERTICAL_STRETCH);
+            canvas.width = newWidth;
+            canvas.height = newHeight;
+            
+            context.drawImage(img, 0, 0, newWidth, newHeight);
+            
+            // 2. ピクセルデータを取得
+            const imageData = context.getImageData(0, 0, newWidth, newHeight).data;
+            
+            // 3. 文字に変換
+            const charList = ['験','藤','雨','羅','鍵','霜','霜','鋼','鋼','換','陽','優','電','龍','舞','阪','限','熱','灘','唯','福','静','森','情','風','星','鳥','勇','景','翔','金','澤','秘','桜','希','空','空','会','学','学','自','自','幸','和','花','知','来','未','石','活','山','友','月','月','大','大','分','分','生','水','心','中','不','气','火','三','平','识','小','小','乙','乙','乙','乙','乙','人','人','人','人','人','人','二','二','二','二','二','二','一','一','一','一','一','一','一','一'];
+            let resultText = "";
+
+            for (let y = 0; y < newHeight; y++) {
+                for (let x = 0; x < newWidth; x++) {
+                    const i = (y * newWidth + x) * 4;
+                    const r = imageData[i];
+                    const g = imageData[i + 1];
+                    const b = imageData[i + 2];
+                    
+                    // グレースケール変換 (BT.601)
+                    const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+                    // 明るさを+10して調整し、小数点以下を切り捨て
+                    const adjustedGray = Math.floor(Math.min(255, gray + 10));
+                    
+                    let moji;
+                    if (adjustedGray <= 125) {
+                        moji = '釄';
+                    } else if (adjustedGray >= 211) {
+                        moji = '　'; // 全角スペース
+                    } else {
+                        const index = Math.floor(adjustedGray - 126);
+                        moji = charList[index] || '　'; // 予備の文字を全角スペースに変更
+                    }
+                    resultText += moji;
+                }
+                resultText += "\n";
+            }
+            return resultText;
+        }
+
+        // --- 秘密のメッセージ埋め込み関数 --- 
+        function embedSecretMessage(asciiArt, secretMsg) {
+            let embeddedArtChars = asciiArt.split('');
+            const cleanSecretMsg = secretMsg.replace(/\n/g, ''); // 秘密のメッセージから改行を削除
+            
+            let embeddablePositions = []; // 埋め込み可能な文字のインデックスを格納
+
+            // 埋め込み可能な文字のインデックスを収集（改行と全角空白以外）
+            for (let i = 0; i < embeddedArtChars.length; i++) {
+                const char = embeddedArtChars[i];
+                if (char !== '\n' && char !== '　') {
+                    embeddablePositions.push(i);
+                }
+            }
+
+            if (cleanSecretMsg.length > embeddablePositions.length) {
+                alert("秘密のメッセージが長すぎます。全てを埋め込むことはできません。\n（埋め込み可能文字数: " + embeddablePositions.length + "、メッセージ文字数: " + cleanSecretMsg.length + "）");
+                // ここでは可能な限り埋め込みを続行
+            }
+
+            let currentEmbeddableIndex = 0; // embeddablePositionsの現在のインデックス
+
+            for (let i = 0; i < cleanSecretMsg.length; i++) {
+                // 残りの埋め込み可能スロット数
+                const remainingSlots = embeddablePositions.length - currentEmbeddableIndex;
+                // 残りのメッセージ文字数
+                const remainingMsg = cleanSecretMsg.length - i;
+
+                if (remainingMsg <= 0 || remainingSlots <= 0) {
+                    break; // 埋め込むメッセージがないか、スロットがない
+                }
+
+                // 次の文字を埋め込むまでの最大スキップ数を計算
+                // 少なくとも1文字は埋め込むので、remainingMsgは常に1以上
+                let maxSkip = Math.floor(remainingSlots / remainingMsg);
+                
+                // ランダムなスキップ数を決定 (0からmaxSkipの範囲)
+                let skip = Math.floor(Math.random() * (maxSkip + 1));
+
+                // 埋め込み位置を決定
+                currentEmbeddableIndex += skip;
+
+                // 埋め込み可能な位置の範囲を超えないように調整
+                if (currentEmbeddableIndex >= embeddablePositions.length) {
+                    currentEmbeddableIndex = embeddablePositions.length - 1; // 最後の位置に強制
+                }
+                
+                const targetArtIndex = embeddablePositions[currentEmbeddableIndex];
+
+                // 実際に文字を埋め込む
+                embeddedArtChars[targetArtIndex] = cleanSecretMsg[i];
+                
+                // 次の埋め込みのために、現在の位置から1つ進める
+                currentEmbeddableIndex++;
+            }
+
+            return embeddedArtChars.join('');
+        }
+
+        // --- 秘密のメッセージ抽出関数 --- 
+        function extractSecretMessage(generatedArt, originalText) {
+            let secret = "";
+            // 改行コードを統一して比較（Windows: \r\n, Unix/Mac: \n）
+            const cleanGeneratedArt = generatedArt.replace(/\r\n/g, '\n');
+            const cleanOriginalText = originalText.replace(/\r\n/g, '\n');
+
+            const minLength = Math.min(cleanGeneratedArt.length, cleanOriginalText.length);
+
+            for (let i = 0; i < minLength; i++) {
+                if (cleanGeneratedArt[i] !== cleanOriginalText[i]) {
+                    secret += cleanOriginalText[i];
+                }
+            }
+            return secret;
+        }
+
+        // --- ダウンロード関数 (生成アート用) --- 
+        function downloadGeneratedAsciiArt() {
+            if (!generatedAsciiArt) {
+                alert('ダウンロードするアートが見つかりません。');
+                return;
+            }
+            const textToSave = generatedAsciiArt;
+            const blob = new Blob([textToSave], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mojie-art.txt'; 
+            document.body.appendChild(a); 
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --- ダウンロード関数 (抽出された秘密メッセージ用) --- 
+        function downloadExtractedSecret() {
+            if (!extractedSecretMessage) {
+                alert('ダウンロードする秘密のメッセージが見つかりません。');
+                return;
+            }
+            const blob = new Blob([extractedSecretMessage], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'secret-message.txt';
+            document.body.appendChild(a); 
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 初期表示
+        showMode('selection');
+
+    </script>
+</body>
+</html>
