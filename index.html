@@ -88,7 +88,7 @@
             line-height: 1.1;
             white-space: pre;
             font-family: 'MS Gothic', 'Osaka-mono', monospace;
-            font-size: 2px;
+            font-size: 2px; /* Adjusted for PC view */
             border-radius: 5px;
             overflow-x: auto;
             max-width: 100%;
@@ -206,7 +206,7 @@
 <body>
     <div id="container">
         <h1>MojiE</h1>
-        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.2.3</p>
+        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.2.4</p>
         <p>画像 to 文字アート変換</p>
 
         <div id="mode-selection" class="active">
@@ -336,6 +336,11 @@
 
             generatedAsciiArt = "";
             extractedSecretMessage = "";
+
+            // Check orientation for mobile devices
+            if (window.innerWidth < window.innerHeight && window.innerWidth <= 480) { // Assuming 480px as a mobile portrait threshold
+                alert("より良い表示のために、画面を横向きにしてください。");
+            }
 
             // Activate the correct view
             if (mode === 'mojie-conversion') {
