@@ -193,9 +193,9 @@
                 width: 100%;
             }
             pre {
-                font-size: 3px; /* Further reduced font size for better fit on mobile */
+                font-size: 2px; /* Further reduced font size for better fit on mobile */
                 line-height: 0.8; /* Adjusted line height for compact display */
-                min-width: 300px; /* Ensure minimum width to prevent excessive wrapping */
+                /* min-width removed to allow full shrinking */
             }
             .secret-message-pre {
                 font-size: 18px;
@@ -206,7 +206,7 @@
 <body>
     <div id="container">
         <h1>MojiE</h1>
-        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.2.0</p>
+        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.2.1</p>
         <p>画像 to 文字アート変換</p>
 
         <div id="mode-selection" class="active">
