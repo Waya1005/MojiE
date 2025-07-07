@@ -206,7 +206,7 @@
 <body>
     <div id="container">
         <h1>MojiE</h1>
-        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.2.7</p>
+        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.2.8</p>
         <p>画像 to 文字アート変換</p>
 
         <div id="mode-selection" class="active">
@@ -317,7 +317,6 @@
             mojieConversionMode.classList.remove('active');
             hideSecretMode.classList.remove('active');
             decodeSecretMode.classList.remove('active');
-            controls.classList.remove('active');
             loadingMessage.classList.remove('active');
 
             resultArea.innerHTML = ''; // Clear result area
@@ -348,15 +347,19 @@
             // Activate the correct view
             if (mode === 'mojie-conversion') {
                 mojieConversionMode.classList.add('active');
+                controls.classList.add('active'); // Ensure controls are active
                 currentMode = 'mojie-conversion';
             } else if (mode === 'hide-secret') {
                 hideSecretMode.classList.add('active');
+                controls.classList.add('active'); // Ensure controls are active
                 currentMode = 'hide-secret';
             } else if (mode === 'decode-secret') {
                 decodeSecretMode.classList.add('active');
+                controls.classList.add('active'); // Ensure controls are active
                 currentMode = 'decode-secret';
             } else { // back to mode selection
                 modeSelection.classList.add('active');
+                controls.classList.remove('active'); // Hide controls on mode selection
                 currentMode = '';
             }
         }
