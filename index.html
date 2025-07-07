@@ -195,7 +195,7 @@
             pre {
                 font-size: 1.2vw; /* Scale with viewport width for better fit */
                 line-height: 0.5; /* Adjusted line height to match font aspect ratio */
-                /* min-width removed to allow full shrinking */
+                overflow-x: hidden; /* Hide horizontal scrollbar */
             }
             .secret-message-pre {
                 font-size: 18px;
@@ -206,7 +206,7 @@
 <body>
     <div id="container">
         <h1>MojiE</h1>
-        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.2.2</p>
+        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.2.3</p>
         <p>画像 to 文字アート変換</p>
 
         <div id="mode-selection" class="active">
@@ -565,7 +565,7 @@
         function convertToAscii(img) {
             const TARGET_WIDTH = 300; // 文字アートの幅
             const FONT_ASPECT_RATIO = 0.5; // 文字の縦横比（高さ/幅）
-            const VERTICAL_STRETCH = 1.9; // 縦方向への引き伸ばし率
+            const VERTICAL_STRETCH = 2.0; // 縦方向への引き伸ばし率
             
             // 1. 画像を適切なサイズにリサイズするためのCanvasを作成
             const canvas = document.createElement('canvas');
