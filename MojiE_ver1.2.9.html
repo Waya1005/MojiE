@@ -133,10 +133,10 @@
         #mode-selection.active, #mojie-conversion-mode.active, #hide-secret-mode.active, #decode-secret-mode.active, #controls.active, #loading-message.active {
             display: block;
         }
-        #download-generated-button, #download-secret-button {
+        #download-generated-button, #download-secret-button, #download-generated-image-button {
             display: none; /* Hide download buttons by default */
         }
-        #download-generated-button.visible, #download-secret-button.visible {
+        #download-generated-button.visible, #download-secret-button.visible, #download-generated-image-button.visible {
             display: inline-block; /* Show them when they have the .visible class */
         }
 
@@ -207,7 +207,7 @@
 <body>
     <div id="container">
         <h1>MojiE</h1>
-        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.2.9</p>
+        <p style="font-size: 0.8em; color: #666; margin-top: -1em;">ver1.3.0</p>
         <p>画像 to 文字アート変換</p>
 
         <div id="mode-selection" class="active">
@@ -263,6 +263,7 @@
         <div id="controls">
             <button id="back-to-mode-selection">モード選択に戻る</button>
             <button id="download-generated-button">生成アートをテキストで保存</button>
+            <button id="download-generated-image-button">生成アートを画像で保存</button>
             <button id="download-secret-button">秘密のメッセージを保存</button>
             <div style="font-size: 0.8em; color: #666; margin-top: 1em;">
                 ダウンロードしたファイルは、ブラウザのダウンロード履歴またはデバイスの「ダウンロード」フォルダをご確認ください。
@@ -305,6 +306,7 @@
         const controls = document.getElementById('controls');
         const backToModeSelectionButton = document.getElementById('back-to-mode-selection');
         const downloadGeneratedButton = document.getElementById('download-generated-button');
+        const downloadGeneratedImageButton = document.getElementById('download-generated-image-button');
         const downloadSecretButton = document.getElementById('download-secret-button');
 
         let currentMode = ''; // 'mojie-conversion', 'hide-secret', 'decode-secret'
@@ -336,6 +338,7 @@
             // Hide download buttons
             downloadGeneratedButton.classList.remove('visible');
             downloadSecretButton.classList.remove('visible');
+            downloadGeneratedImageButton.classList.remove('visible');
 
             generatedAsciiArt = "";
             extractedSecretMessage = "";
@@ -371,6 +374,13 @@
         decodeSecretButton.addEventListener('click', () => showMode('decode-secret'));
         backToModeSelectionButton.addEventListener('click', () => showMode('selection'));
         downloadGeneratedButton.addEventListener('click', downloadGeneratedAsciiArt);
+        downloadGeneratedImageButton.addEventListener('click', () => {
+            if (generatedAsciiArt) {
+                saveAsciiArtAsImage(generatedAsciiArt);
+            } else {
+                alert('保存するアスキーアートがありません。');
+            }
+        });
         downloadSecretButton.addEventListener('click', downloadExtractedSecret);
 
         // --- ファイル選択とドラッグ＆ドロップの共通処理 --- 
@@ -426,6 +436,7 @@
             controls.classList.add('active');
             if (showGeneratedDownload) {
                 downloadGeneratedButton.classList.add('visible');
+                downloadGeneratedImageButton.classList.add('visible');
             }
             if (showSecretDownload) {
                 downloadSecretButton.classList.add('visible');
@@ -722,6 +733,61 @@
             URL.revokeObjectURL(url);
         }
 
+        // --- アスキーアートを画像として保存する関数 ---
+        function saveAsciiArtAsImage(asciiArtText) {
+            const canvas = document.getElementById('asciiArtCanvas');
+            const context = canvas.getContext('2d');
+
+            // preタグのスタイルを参考にフォント設定
+            // font-size: 2px; line-height: 0.5; font-family: 'MS Gothic', 'Osaka-mono', monospace;
+            const fontSize = 2; 
+            const lineHeight = 0.5; 
+            const fontFamily = "'MS Gothic', 'Osaka-mono', monospace";
+            context.font = `${fontSize}px ${fontFamily}`;
+
+            const lines = asciiArtText.split('\n');
+
+            let maxWidth = 0;
+            // 各行の幅を測定し、最大幅を求める
+            lines.forEach(line => {
+                const metrics = context.measureText(line);
+                maxWidth = Math.max(maxWidth, metrics.width);
+            });
+
+            // Canvasの高さは、行数 * フォントサイズ * 行間 で計算
+            const totalHeight = lines.length * fontSize * lineHeight;
+
+            canvas.width = maxWidth;
+            canvas.height = totalHeight;
+
+            // 背景を白で塗りつぶす
+            context.fillStyle = '#FFFFFF';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 文字色を黒に設定
+            context.fillStyle = '#000000';
+
+            // 各行を描画
+            lines.forEach((line, index) => {
+                // y座標は、行番号 * (フォントサイズ * 行間) + 調整値
+                // 0.8は、fillTextのベースラインが文字の下部にあるため、適切な位置に調整するための値
+                const y = (index + 0.8) * fontSize * lineHeight; 
+                context.fillText(line, 0, y);
+            });
+
+            // Canvasの内容を画像データURLとして取得
+            const imageDataURL = canvas.toDataURL('image/png'); // PNG形式で取得
+
+            // ダウンロードリンクを作成してクリック
+            const a = document.createElement('a');
+            a.href = imageDataURL;
+            a.download = 'mojie-art.png'; // ダウンロードファイル名
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
         // --- ダウンロード関数 (抽出された秘密メッセージ用) --- 
         function downloadExtractedSecret() {
             if (!extractedSecretMessage) {
@@ -743,5 +809,6 @@
         showMode('selection');
 
     </script>
+    <canvas id="asciiArtCanvas" style="display: none;"></canvas>
 </body>
 </html>
